@@ -1,0 +1,188 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kozsd-mail-service
+  labels:
+    name: kozsd-mail-service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: kozsd-mail-service
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  LOG_LEVEL: "info"
+  BCRYPT_ROUNDS: "12"
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  PROMETHEUS_PORT: "9090"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: kozsd-mail-service
+type: Opaque
+data:
+  # Base64 encoded values (use kubectl create secret generic app-secrets --from-literal=... in production)
+  JWT_SECRET: "eW91ci1zdXBlci1zZWNyZXQtand0LWtleS1mb3ItcHJvZHVjdGlvbg=="
+  DATABASE_URL: "cG9zdGdyZXNxbDovL3VzZXJuYW1lOnBhc3N3b3JkQHBvc3RncmVzOjU0MzIva296c2RfbWFpbF9kYg=="
+  REDIS_URL: "cmVkaXM6Ly9yZWRpczozNjM3OQ=="
+  SMTP_USER: "eW91ci1lbWFpbEBnbWFpbC5jb20="
+  SMTP_PASSWORD: "eW91ci1hcHAtcGFzc3dvcmQ="
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kozsd-mail-service
+  namespace: kozsd-mail-service
+  labels:
+    app: kozsd-mail-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kozsd-mail-service
+  template:
+    metadata:
+      labels:
+        app: kozsd-mail-service
+    spec:
+      containers:
+      - name: kozsd-mail-service
+        image: ghcr.io/kozsd2/kozsd-mail-service:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: LOG_LEVEL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: JWT_SECRET
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: REDIS_URL
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SMTP_USER
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SMTP_PASSWORD
+        livenessProbe:
+          httpGet:
+            path: /api/health/liveness
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health/readiness
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kozsd-mail-service
+  namespace: kozsd-mail-service
+  labels:
+    app: kozsd-mail-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: kozsd-mail-service
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kozsd-mail-service
+  namespace: kozsd-mail-service
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - api.kozsd.com
+    secretName: kozsd-mail-service-tls
+  rules:
+  - host: api.kozsd.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kozsd-mail-service
+            port:
+              number: 3000
