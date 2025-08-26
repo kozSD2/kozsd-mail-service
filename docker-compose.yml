@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kozsd-mail-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kozsd_mail_service
+      POSTGRES_USER: kozsd
+      POSTGRES_PASSWORD: kozsd123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kozsd -d kozsd_mail_service"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: kozsd-mail-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    container_name: kozsd-mail-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: kozsd-mail-minio
+      MINIO_ROOT_PASSWORD: kozsd-mail-minio-secret-2024
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kozsd-mail-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      DATABASE_URL: postgresql://kozsd:kozsd123@postgres:5432/kozsd_mail_service
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: kozsd-mail-minio
+      MINIO_SECRET_KEY: kozsd-mail-minio-secret-2024
+      JWT_ACCESS_SECRET: kozsd-mail-access-secret-key-2024-development
+      JWT_REFRESH_SECRET: kozsd-mail-refresh-secret-key-2024-development
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kozsd-mail-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3002
+      VITE_APP_NAME: KozSD Mail Service
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: kozsd-mail-admin
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3002
+      VITE_APP_NAME: KozSD Mail Admin
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./admin:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  default:
+    name: kozsd-mail-network
