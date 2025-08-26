@@ -2,9 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import 'reflect-metadata';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+
+// Import database configuration
+import { AppDataSource, initializeDatabase, closeDatabase } from './config/database';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -19,9 +22,6 @@ import { logger } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
-
-// Initialize Prisma client
-export const prisma = new PrismaClient();
 
 // Create Express app
 const app = express();
@@ -120,7 +120,7 @@ const shutdown = async () => {
   server.close(() => {
     logger.info('HTTP server closed');
   });
-  await prisma.$disconnect();
+  await closeDatabase();
   process.exit(0);
 };
 
@@ -128,12 +128,24 @@ process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
 // Start server
-server.listen(PORT, () => {
-  logger.info(`🚀 KozSD Mail Service API running on port ${PORT}`);
-  logger.info(`📧 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
-  logger.info(`⚡ Admin URL: ${process.env.ADMIN_URL || 'http://localhost:3002'}`);
-});
+const startServer = async () => {
+  try {
+    // Initialize database connection
+    await initializeDatabase();
+    
+    server.listen(PORT, () => {
+      logger.info(`🚀 KozSD Mail Service API running on port ${PORT}`);
+      logger.info(`📧 Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+      logger.info(`⚡ Admin URL: ${process.env.ADMIN_URL || 'http://localhost:3002'}`);
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;
-export { io };
+export { io, AppDataSource };
