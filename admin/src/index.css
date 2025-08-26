@@ -2,5 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import the same styles as frontend */
-@import url('../../../frontend/src/index.css');
+/* Custom Glass Morphism Components */
+@layer components {
+  .glass {
+    @apply backdrop-blur-md bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10;
+  }
+  
+  .glass-card {
+    @apply glass rounded-glass shadow-glass hover:shadow-glass-hover transition-all duration-300;
+  }
+  
+  .btn-glass {
+    @apply glass px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:bg-white/30 dark:hover:bg-white/10 active:scale-95;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:from-primary-600 hover:to-primary-700 active:scale-95 shadow-lg hover:shadow-neon;
+  }
+  
+  .aurora-bg {
+    @apply bg-gradient-to-br from-primary-400/20 via-secondary-400/20 to-accent-400/20 animate-aurora;
+    background-size: 400% 400%;
+  }
+}
+
+/* Aurora background animation */
+.aurora-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurora-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(34, 197, 94, 0.1),
+    rgba(250, 204, 21, 0.1),
+    rgba(14, 165, 233, 0.1),
+    rgba(168, 85, 247, 0.1)
+  );
+  background-size: 400% 400%;
+  animation: aurora 15s ease infinite;
+  pointer-events: none;
+}
+
+@keyframes aurora {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
