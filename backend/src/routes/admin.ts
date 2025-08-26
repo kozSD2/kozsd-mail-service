@@ -1,10 +1,10 @@
 import { Router } from 'express';
+import { AppDataSource } from '../config/database';
+import { User } from '../entities/User';
 import { authenticateToken, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
-// import { PrismaClient } from '@prisma/client';
 
 const router = Router();
-// const prisma = new PrismaClient();
 
 // Apply authentication and admin requirement to all admin routes
 router.use(authenticateToken);
@@ -13,37 +13,15 @@ router.use(requireAdmin);
 // Get system statistics
 router.get('/stats',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const [
-      totalUsers,
-      activeUsers,
-      totalEmails,
-      emailsToday,
-      eduUsers
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({
-        where: { isActive: true }
-      }),
-      prisma.email.count(),
-      prisma.email.count({
-        where: {
-          sentAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
-        }
-      }),
-      prisma.user.count({
-        where: { isEduVerified: true }
-      })
-    ]);
-
+    // TODO: Implement with TypeORM - placeholder for now
     res.json({
+      message: 'Admin stats endpoint - TypeORM implementation pending',
       stats: {
-        totalUsers,
-        activeUsers,
-        totalEmails,
-        emailsToday,
-        eduUsers
+        totalUsers: 0,
+        activeUsers: 0,
+        totalEmails: 0,
+        emailsToday: 0,
+        eduVerifiedUsers: 0
       }
     });
   })
@@ -52,68 +30,32 @@ router.get('/stats',
 // Get all users
 router.get('/users',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const skip = (page - 1) * limit;
-
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        isEduVerified: true,
-        isActive: true,
-        createdAt: true,
-        lastLoginAt: true
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit
-    });
-
-    const totalUsers = await prisma.user.count();
-
+    // TODO: Implement with TypeORM - placeholder for now
     res.json({
-      users,
+      message: 'Admin users endpoint - TypeORM implementation pending',
+      users: [],
       pagination: {
-        page,
-        limit,
-        totalCount: totalUsers,
-        totalPages: Math.ceil(totalUsers / limit)
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0
       }
     });
   })
 );
 
-// Get recent activity logs
+// Get user activity logs
 router.get('/activity',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
-    const skip = (page - 1) * limit;
-
-    const activities = await prisma.activityLog.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit
-    });
-
-    const totalActivities = await prisma.activityLog.count();
-
+    // TODO: Implement with TypeORM - placeholder for now
     res.json({
-      activities,
+      message: 'Admin activity endpoint - TypeORM implementation pending',
+      activities: [],
       pagination: {
-        page,
-        limit,
-        totalCount: totalActivities,
-        totalPages: Math.ceil(totalActivities / limit)
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0
       }
     });
   })
@@ -122,33 +64,15 @@ router.get('/activity',
 // Get login attempts
 router.get('/login-attempts',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
-    const skip = (page - 1) * limit;
-
-    const attempts = await prisma.loginAttempt.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit
-    });
-
-    const totalAttempts = await prisma.loginAttempt.count();
-
+    // TODO: Implement with TypeORM - placeholder for now
     res.json({
-      attempts,
+      message: 'Admin login attempts endpoint - TypeORM implementation pending',
+      attempts: [],
       pagination: {
-        page,
-        limit,
-        totalCount: totalAttempts,
-        totalPages: Math.ceil(totalAttempts / limit)
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0
       }
     });
   })
