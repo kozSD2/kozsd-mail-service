@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for Frutiger Aero Design */
+:root {
+  /* Colors */
+  --color-primary: #22c55e;
+  --color-secondary: #facc15;
+  --color-accent: #0ea5e9;
+  
+  /* Glass Effects */
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  /* Aurora Gradients */
+  --aurora-primary: linear-gradient(135deg, #22c55e 0%, #facc15 50%, #0ea5e9 100%);
+  --aurora-secondary: linear-gradient(45deg, #16a34a 0%, #ca8a04 50%, #0284c7 100%);
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+[data-theme="dark"] {
+  --glass-bg: rgba(0, 0, 0, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Base Styles */
+* {
+  @apply box-border;
+}
+
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  @apply font-sans antialiased;
+  @apply text-gray-900 dark:text-gray-100;
+  @apply bg-gradient-to-br from-gray-50 via-white to-gray-100;
+  @apply dark:from-gray-950 dark:via-gray-900 dark:to-gray-800;
+  @apply min-h-screen;
+}
+
+/* Frutiger Aero Glass Components */
+@layer components {
+  .glass {
+    @apply backdrop-blur-md bg-white/10 dark:bg-black/10;
+    @apply border border-white/20 dark:border-white/10;
+    @apply shadow-lg shadow-black/5 dark:shadow-black/20;
+  }
+  
+  .glass-panel {
+    @apply glass rounded-xl p-6;
+  }
+  
+  .glass-card {
+    @apply glass rounded-lg p-4;
+    @apply hover:bg-white/20 dark:hover:bg-white/5;
+    @apply transition-all duration-300;
+  }
+  
+  .aurora-bg {
+    @apply bg-gradient-to-br from-primary-500 via-secondary-400 to-accent-500;
+    @apply animate-aurora bg-[length:200%_200%];
+  }
+  
+  .aurora-text {
+    @apply bg-gradient-to-r from-primary-600 via-secondary-500 to-accent-600;
+    @apply bg-clip-text text-transparent;
+  }
+  
+  .btn-primary {
+    @apply inline-flex items-center justify-center;
+    @apply px-6 py-3 rounded-lg font-medium;
+    @apply bg-primary-500 hover:bg-primary-600;
+    @apply text-white shadow-lg shadow-primary-500/25;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50;
+    @apply active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center;
+    @apply px-6 py-3 rounded-lg font-medium;
+    @apply bg-secondary-400 hover:bg-secondary-500;
+    @apply text-gray-900 shadow-lg shadow-secondary-400/25;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-secondary-400/50;
+    @apply active:scale-95;
+  }
+  
+  .btn-ghost {
+    @apply inline-flex items-center justify-center;
+    @apply px-6 py-3 rounded-lg font-medium;
+    @apply bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800;
+    @apply text-gray-700 dark:text-gray-300;
+    @apply border border-gray-200 dark:border-gray-700;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-gray-500/50;
+  }
+  
+  .input-glass {
+    @apply glass rounded-lg px-4 py-3;
+    @apply bg-white/50 dark:bg-black/50;
+    @apply placeholder-gray-500 dark:placeholder-gray-400;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50;
+    @apply transition-all duration-200;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg;
+    @apply text-gray-700 dark:text-gray-300;
+    @apply hover:bg-white/10 dark:hover:bg-white/5;
+    @apply transition-all duration-200;
+    @apply cursor-pointer;
+  }
+  
+  .sidebar-item.active {
+    @apply bg-primary-500/10 text-primary-600 dark:text-primary-400;
+    @apply border-l-2 border-primary-500;
+  }
+  
+  .email-card {
+    @apply glass-card cursor-pointer;
+    @apply hover:scale-[1.02] hover:shadow-xl;
+    @apply transition-all duration-300;
+  }
+  
+  .floating-element {
+    @apply animate-float;
+  }
+  
+  .glow-effect {
+    @apply animate-pulse-glow;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Selection */
+::selection {
+  @apply bg-primary-500/20 text-primary-900;
+}
+
+/* Focus Visible */
+.focus-visible {
+  @apply outline-none ring-2 ring-primary-500/50 ring-offset-2;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply animate-spin rounded-full border-2 border-gray-300;
+  @apply border-t-primary-500;
+}
+
+/* Utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    @apply hidden;
+  }
+  
+  body {
+    @apply bg-white text-black;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .glass {
+    @apply bg-white dark:bg-black border-2;
+  }
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  .sidebar-item.active {
+    @apply border-l-0 border-r-2;
+  }
+}
