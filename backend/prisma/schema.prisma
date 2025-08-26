@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(uuid())
+  username          String   @unique @db.VarChar(50)
+  encryptedEmail    String   @map("encrypted_email")
+  passwordHash      String   @map("password_hash")
+  encryptionKeyId   String   @map("encryption_key_id") @db.Uuid
+  isEduVerified     Boolean  @default(false) @map("is_edu_verified")
+  profileSettings   Json?    @map("profile_settings")
+  refreshToken      String?  @map("refresh_token")
+  lastLoginAt       DateTime? @map("last_login_at")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  sentEmails        Email[]  @relation("SentEmails")
+  receivedEmails    EmailRecipient[]
+  folders           Folder[]
+  attachments       Attachment[]
+  activityLogs      ActivityLog[]
+  loginAttempts     LoginAttempt[]
+
+  @@map("users")
+}
+
+model Email {
+  id                String   @id @default(uuid())
+  encryptedSubject  String   @map("encrypted_subject")
+  encryptedBody     String   @map("encrypted_body")
+  senderId          String   @map("sender_id") @db.Uuid
+  isRead            Boolean  @default(false) @map("is_read")
+  isStarred         Boolean  @default(false) @map("is_starred")
+  isDraft           Boolean  @default(false) @map("is_draft")
+  isDeleted         Boolean  @default(false) @map("is_deleted")
+  priority          Priority @default(NORMAL)
+  sentAt            DateTime @default(now()) @map("sent_at")
+  readAt            DateTime? @map("read_at")
+  deletedAt         DateTime? @map("deleted_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  sender            User     @relation("SentEmails", fields: [senderId], references: [id], onDelete: Cascade)
+  recipients        EmailRecipient[]
+  attachments       Attachment[]
+  folders           EmailFolder[]
+
+  @@map("emails")
+}
+
+model EmailRecipient {
+  id              String        @id @default(uuid())
+  emailId         String        @map("email_id") @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  recipientType   RecipientType @map("recipient_type")
+  isRead          Boolean       @default(false) @map("is_read")
+  readAt          DateTime?     @map("read_at")
+
+  // Relations
+  email           Email         @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([emailId, userId])
+  @@map("email_recipients")
+}
+
+model Folder {
+  id              String   @id @default(uuid())
+  name            String   @db.VarChar(100)
+  userId          String   @map("user_id") @db.Uuid
+  isSystem        Boolean  @default(false) @map("is_system")
+  color           String?  @db.VarChar(7)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails          EmailFolder[]
+
+  @@unique([name, userId])
+  @@map("folders")
+}
+
+model EmailFolder {
+  id              String   @id @default(uuid())
+  emailId         String   @map("email_id") @db.Uuid
+  folderId        String   @map("folder_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  email           Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  folder          Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@unique([emailId, folderId])
+  @@map("email_folders")
+}
+
+model Attachment {
+  id              String   @id @default(uuid())
+  originalName    String   @map("original_name")
+  encryptedName   String   @map("encrypted_name")
+  mimeType        String   @map("mime_type")
+  fileSize        Int      @map("file_size")
+  s3Key           String   @map("s3_key")
+  emailId         String?  @map("email_id") @db.Uuid
+  uploadedBy      String   @map("uploaded_by") @db.Uuid
+  isScanned       Boolean  @default(false) @map("is_scanned")
+  scanResult      ScanResult? @map("scan_result")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  email           Email?   @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+model ActivityLog {
+  id              String       @id @default(uuid())
+  userId          String       @map("user_id") @db.Uuid
+  action          String       @db.VarChar(100)
+  details         Json?
+  ipAddress       String?      @map("ip_address") @db.VarChar(45)
+  userAgent       String?      @map("user_agent")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model LoginAttempt {
+  id              String       @id @default(uuid())
+  userId          String?      @map("user_id") @db.Uuid
+  email           String?      @db.VarChar(255)
+  ipAddress       String       @map("ip_address") @db.VarChar(45)
+  userAgent       String?      @map("user_agent")
+  success         Boolean
+  failureReason   String?      @map("failure_reason")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("login_attempts")
+}
+
+model EncryptionKey {
+  id              String       @id @default(uuid())
+  keyVersion      Int          @map("key_version")
+  encryptedKey    String       @map("encrypted_key")
+  isActive        Boolean      @default(true) @map("is_active")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@map("encryption_keys")
+}
+
+model RateLimitLog {
+  id              String       @id @default(uuid())
+  identifier      String       @db.VarChar(255)
+  action          String       @db.VarChar(100)
+  count           Int          @default(1)
+  windowStart     DateTime     @map("window_start")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@map("rate_limit_logs")
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RecipientType {
+  TO
+  CC
+  BCC
+}
+
+enum ScanResult {
+  CLEAN
+  INFECTED
+  SUSPICIOUS
+  ERROR
+}

@@ -1,0 +1,56 @@
+{
+  "name": "kozsd-mail-admin",
+  "version": "1.0.0",
+  "description": "KozSD Mail Service Admin Panel",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.15.0",
+    "react-query": "^3.39.3",
+    "axios": "^1.5.0",
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "framer-motion": "^10.16.1",
+    "react-hook-form": "^7.45.4",
+    "@hookform/resolvers": "^3.3.1",
+    "yup": "^1.2.0",
+    "react-hot-toast": "^2.4.1",
+    "date-fns": "^2.30.0",
+    "clsx": "^2.0.0",
+    "recharts": "^2.8.0",
+    "js-cookie": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "@types/node": "^20.5.0",
+    "@types/js-cookie": "^3.0.3",
+    "typescript": "^4.9.5",
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^3.3.3",
+    "autoprefixer": "^10.4.15",
+    "postcss": "^8.4.28",
+    "@tailwindcss/forms": "^0.5.4",
+    "@tailwindcss/typography": "^0.5.9"
+  },
+  "scripts": {
+    "start": "BROWSER=none PORT=3002 react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://localhost:3001"
+}
