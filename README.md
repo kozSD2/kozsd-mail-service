@@ -50,14 +50,11 @@ kozsd-mail-service/
 │       └── manifest.json  # PWA manifest
 ├── 📁 backend/            # Node.js API with Express
 │   ├── src/
-│   │   ├── controllers/   # Route handlers
-│   │   ├── middleware/    # Authentication, rate limiting
-│   │   ├── models/        # Database models
-│   │   ├── services/      # Business logic
-│   │   ├── routes/        # API route definitions
-│   │   └── utils/         # Encryption & utilities
-│   └── prisma/
-│       └── schema.prisma  # Database schema
+│   │   ├── config/         # Database configuration
+│   │   ├── entities/       # TypeORM entities
+│   │   ├── middleware/     # Authentication, rate limiting
+│   │   ├── routes/         # API route definitions
+│   │   └── utils/          # Encryption & utilities
 ├── 📁 admin/              # Admin panel
 ├── 📁 shared/             # Shared types and utilities
 ├── 📁 docs/               # Documentation
@@ -121,7 +118,7 @@ npm run dev
 
 ### Backend
 - **Node.js** with Express.js and TypeScript
-- **Prisma ORM** with PostgreSQL
+- **TypeORM** with PostgreSQL
 - **Redis** for caching and rate limiting
 - **JWT** with RS256 algorithm
 - **Socket.io** for real-time features
@@ -138,7 +135,7 @@ npm run dev
 - **Docker** for containerization
 - **GitHub Actions** for CI/CD
 - **AWS** deployment ready
-- **Prisma** database migrations
+- **TypeORM** database migrations
 - **ESLint** & **Prettier** for code quality
 
 ## 📖 API Documentation

@@ -109,10 +109,80 @@ router.get('/',
 // Get specific email
 router.get('/:emailId',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    // TODO: Implement with TypeORM - placeholder for now
+    const { emailId } = req.params;
+    const userId = req.user!.id;
+
+    const emailRepository = AppDataSource.getRepository(Email);
+    const email = await emailRepository.findOne({
+      where: { id: emailId },
+      relations: {
+        sender: true,
+        recipients: {
+          user: true
+        },
+        attachments: true
+      }
+    });
+
+    if (!email) {
+      return res.status(404).json({
+        error: 'Email not found',
+        code: 'EMAIL_NOT_FOUND'
+      });
+    }
+
+    // Check if user has access to this email (is sender or recipient)
+    const hasAccess = email.sender.id === userId || 
+      email.recipients.some(recipient => recipient.user.id === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        error: 'Access denied',
+        code: 'ACCESS_DENIED'
+      });
+    }
+
+    // Mark as read if user is a recipient
+    const recipientRepository = AppDataSource.getRepository(EmailRecipient);
+    await recipientRepository.update(
+      { emailId, userId, isRead: false },
+      { isRead: true, readAt: new Date() }
+    );
+
+    // Log activity
+    activityLogger.info('Email viewed', {
+      userId,
+      emailId,
+      timestamp: new Date().toISOString()
+    });
+
     res.json({
-      message: 'Get email endpoint - TypeORM implementation pending',
-      emailId: req.params.emailId
+      id: email.id,
+      subject: email.encryptedSubject, // In real implementation, decrypt this
+      body: email.encryptedBody, // In real implementation, decrypt this
+      sender: {
+        id: email.sender.id,
+        username: email.sender.username
+      },
+      recipients: email.recipients.map(recipient => ({
+        user: {
+          id: recipient.user.id,
+          username: recipient.user.username
+        },
+        recipientType: recipient.recipientType
+      })),
+      attachments: email.attachments.map(attachment => ({
+        id: attachment.id,
+        originalName: attachment.originalName,
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize
+      })),
+      isRead: email.isRead,
+      isStarred: email.isStarred,
+      isDraft: email.isDraft,
+      priority: email.priority,
+      sentAt: email.sentAt,
+      readAt: email.readAt
     });
   })
 );
