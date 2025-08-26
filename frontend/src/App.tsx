@@ -1,6 +1,7 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
-import { useTheme } from '@/hooks/useTheme'
+import { AuthProvider, useAuth } from '@/hooks/useAuth'
+import { ThemeProvider } from '@/hooks/useTheme'
 
 // Layouts
 import AuthLayout from '@/components/layouts/AuthLayout'
@@ -9,29 +10,32 @@ import DashboardLayout from '@/components/layouts/DashboardLayout'
 // Pages
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
-import InboxPage from '@/pages/email/InboxPage'
-import ComposePage from '@/pages/email/ComposePage'
-import EmailDetailPage from '@/pages/email/EmailDetailPage'
-import SettingsPage from '@/pages/settings/SettingsPage'
-import ProfilePage from '@/pages/profile/ProfilePage'
+// import InboxPage from '@/pages/email/InboxPage'
+// import ComposePage from '@/pages/email/ComposePage'
+// import EmailDetailPage from '@/pages/email/EmailDetailPage'
+// import SettingsPage from '@/pages/settings/SettingsPage'
+// import ProfilePage from '@/pages/profile/ProfilePage'
 
 // Components
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
-function App() {
-  const { user, isLoading } = useAuth()
-  const { theme } = useTheme()
+// Temporary placeholder component for unimplemented pages
+const PlaceholderPage = ({ title }: { title: string }) => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+        {title}
+      </h2>
+      <p className="text-gray-600 dark:text-gray-400">
+        This page is coming soon...
+      </p>
+    </div>
+  </div>
+)
 
-  // Apply theme to document
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [theme])
+function AppContent() {
+  const { user, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -48,9 +52,10 @@ function App() {
           {/* Public Routes */}
           {!user ? (
             <>
-              <Route path="/auth/*" element={<AuthLayout />}>
+              <Route path="/auth" element={<AuthLayout />}>
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
+                <Route index element={<Navigate to="login" replace />} />
               </Route>
               <Route path="*" element={<Navigate to="/auth/login" replace />} />
             </>
@@ -59,15 +64,17 @@ function App() {
             <>
               <Route path="/" element={<DashboardLayout />}>
                 <Route index element={<Navigate to="/inbox" replace />} />
-                <Route path="inbox" element={<InboxPage />} />
-                <Route path="sent" element={<InboxPage folder="sent" />} />
-                <Route path="drafts" element={<InboxPage folder="drafts" />} />
-                <Route path="spam" element={<InboxPage folder="spam" />} />
-                <Route path="trash" element={<InboxPage folder="trash" />} />
-                <Route path="compose" element={<ComposePage />} />
-                <Route path="email/:id" element={<EmailDetailPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="profile" element={<ProfilePage />} />
+                <Route path="inbox" element={<PlaceholderPage title="Inbox" />} />
+                <Route path="sent" element={<PlaceholderPage title="Sent" />} />
+                <Route path="drafts" element={<PlaceholderPage title="Drafts" />} />
+                <Route path="spam" element={<PlaceholderPage title="Spam" />} />
+                <Route path="trash" element={<PlaceholderPage title="Trash" />} />
+                <Route path="compose" element={<PlaceholderPage title="Compose" />} />
+                <Route path="email/:id" element={<PlaceholderPage title="Email Detail" />} />
+                <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+                <Route path="profile" element={<PlaceholderPage title="Profile" />} />
+                <Route path="starred" element={<PlaceholderPage title="Starred" />} />
+                <Route path="archive" element={<PlaceholderPage title="Archive" />} />
               </Route>
               <Route path="/auth/*" element={<Navigate to="/" replace />} />
             </>
@@ -75,6 +82,16 @@ function App() {
         </Routes>
       </div>
     </ErrorBoundary>
+  )
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 
