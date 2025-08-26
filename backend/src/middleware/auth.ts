@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { AppDataSource } from '../config/database';
+import { User } from '../entities/User';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -38,7 +37,8 @@ export const authenticateToken = async (
     const decoded = jwt.verify(token, jwtSecret) as any;
     
     // Fetch user from database to ensure they still exist and are active
-    const user = await prisma.user.findUnique({
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({
       where: { id: decoded.userId },
       select: {
         id: true,

@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { AppDataSource } from '../config/database';
+import { User } from '../entities/User';
+import { LoginAttempt } from '../entities/LoginAttempt';
 import { hashPassword, verifyPassword, encrypt, generateUUID } from '../utils/encryption';
 import { authRateLimiter, passwordResetRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger, activityLogger } from '../utils/logger';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Register endpoint
 router.post('/register', 
@@ -39,13 +40,12 @@ router.post('/register',
     const { username, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username },
-          { encryptedEmail: encrypt(email).encryptedData }
-        ]
-      }
+    const userRepository = AppDataSource.getRepository(User);
+    const existingUser = await userRepository.findOne({
+      where: [
+        { username },
+        { encryptedEmail: encrypt(email).encryptedData }
+      ]
     });
 
     if (existingUser) {
@@ -60,20 +60,12 @@ router.post('/register',
     const encryptedEmail = encrypt(email);
     const encryptionKeyId = generateUUID();
 
-    const user = await prisma.user.create({
-      data: {
-        username,
-        encryptedEmail: encryptedEmail.encryptedData,
-        passwordHash: hashedPassword,
-        encryptionKeyId,
-        isEduVerified: email.toLowerCase().endsWith('.edu')
-      },
-      select: {
-        id: true,
-        username: true,
-        isEduVerified: true,
-        createdAt: true
-      }
+    const user = await userRepository.save({
+      username,
+      encryptedEmail: encryptedEmail.encryptedData,
+      passwordHash: hashedPassword,
+      encryptionKeyId,
+      isEduVerified: email.toLowerCase().endsWith('.edu')
     });
 
     // Log activity
@@ -114,7 +106,8 @@ router.post('/login',
     const { username, password } = req.body;
 
     // Find user
-    const user = await prisma.user.findUnique({
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({
       where: { username },
       select: {
         id: true,
@@ -128,14 +121,13 @@ router.post('/login',
 
     if (!user || !user.isActive) {
       // Log failed attempt
-      await prisma.loginAttempt.create({
-        data: {
-          email: username,
-          ipAddress: req.ip || 'unknown',
-          userAgent: req.get('User-Agent'),
-          success: false,
-          failureReason: 'User not found or inactive'
-        }
+      const loginAttemptRepository = AppDataSource.getRepository(LoginAttempt);
+      await loginAttemptRepository.save({
+        email: username,
+        ipAddress: req.ip || 'unknown',
+        userAgent: req.get('User-Agent'),
+        success: false,
+        failureReason: 'User not found or inactive'
       });
 
       return res.status(401).json({
@@ -148,14 +140,13 @@ router.post('/login',
     const isValidPassword = await verifyPassword(password, user.passwordHash);
     if (!isValidPassword) {
       // Log failed attempt
-      await prisma.loginAttempt.create({
-        data: {
-          userId: user.id,
-          ipAddress: req.ip || 'unknown',
-          userAgent: req.get('User-Agent'),
-          success: false,
-          failureReason: 'Invalid password'
-        }
+      const loginAttemptRepository = AppDataSource.getRepository(LoginAttempt);
+      await loginAttemptRepository.save({
+        userId: user.id,
+        ipAddress: req.ip || 'unknown',
+        userAgent: req.get('User-Agent'),
+        success: false,
+        failureReason: 'Invalid password'
       });
 
       return res.status(401).json({
@@ -185,22 +176,21 @@ router.post('/login',
     );
 
     // Update user with refresh token and last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
+    await userRepository.update(
+      { id: user.id },
+      {
         refreshToken,
         lastLoginAt: new Date()
       }
-    });
+    );
 
     // Log successful attempt
-    await prisma.loginAttempt.create({
-      data: {
-        userId: user.id,
-        ipAddress: req.ip || 'unknown',
-        userAgent: req.get('User-Agent'),
-        success: true
-      }
+    const loginAttemptRepository = AppDataSource.getRepository(LoginAttempt);
+    await loginAttemptRepository.save({
+      userId: user.id,
+      ipAddress: req.ip || 'unknown',
+      userAgent: req.get('User-Agent'),
+      success: true
     });
 
     // Log activity
@@ -243,7 +233,8 @@ router.post('/refresh',
       const decoded = jwt.verify(refreshToken, refreshSecret) as any;
       
       // Find user and verify refresh token
-      const user = await prisma.user.findUnique({
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.findOne({
         where: { 
           id: decoded.userId,
           refreshToken
@@ -297,10 +288,11 @@ router.post('/logout',
     const { refreshToken } = req.body;
 
     // Clear refresh token from database
-    await prisma.user.updateMany({
-      where: { refreshToken },
-      data: { refreshToken: null }
-    });
+    const userRepository = AppDataSource.getRepository(User);
+    await userRepository.update(
+      { refreshToken },
+      { refreshToken: null }
+    );
 
     res.json({
       message: 'Logout successful'

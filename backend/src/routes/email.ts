@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { emailRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
@@ -8,7 +8,7 @@ import { encrypt, decrypt } from '../utils/encryption';
 import { logger, activityLogger } from '../utils/logger';
 
 const router = Router();
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 // Apply authentication to all email routes
 router.use(authenticateToken);

@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { authenticateToken, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 
 const router = Router();
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 // Apply authentication and admin requirement to all admin routes
 router.use(authenticateToken);
