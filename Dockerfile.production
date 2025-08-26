@@ -1,0 +1,49 @@
+# Multi-stage production Dockerfile for KozSD Mail Service
+FROM node:18-alpine AS base
+WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+# Dependencies stage
+FROM base AS deps
+COPY package*.json ./
+RUN npm ci --only=production --no-audit --no-fund && npm cache clean --force
+
+# Development dependencies stage (for building)
+FROM base AS deps-dev
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+
+# Build stage
+FROM deps-dev AS build
+COPY src/ ./src/
+COPY .eslintrc.json .prettierrc.json ./
+RUN npm run lint && npm run build
+
+# Production stage
+FROM base AS production
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Copy production dependencies
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copy application code
+COPY --from=build --chown=nodejs:nodejs /app/src ./src
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown nodejs:nodejs /app/logs
+
+# Switch to non-root user
+USER nodejs
+
+# Expose ports
+EXPOSE 3000 9090
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health/liveness', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "src/server.js"]
